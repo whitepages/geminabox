@@ -38,3 +38,7 @@ end
 task :st => "test:smoke"
 task :test => ["test:units", "test:requests", "test:integration"]
 task :default => :test
+
+require 'gemtools/rake_task'
+Gemtools::RakeTask.install_tasks
+task :acceptance => [ :test ]
