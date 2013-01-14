@@ -23,9 +23,17 @@ class Geminabox::DiskCache
     read(key_hash) || write(key_hash, yield)
   end
 
-  def marshal_cache(key)
+  def marshal_cache(key, logger)
     key_hash = key_hash(key)
-    marshal_read(key_hash) || marshal_write(key_hash, yield)
+    cached_value = marshal_read(key_hash)
+    if cached_value
+      cached_value
+    else
+      logger.info "No cached value found for '#{key}' (cache '#{key_hash}') - generating"
+      cached_value = marshal_write(key_hash, yield)
+      logger.info "New value cached for '#{key}' (cache '#{key_hash}')"
+      cached_value
+    end
   end
 
 protected

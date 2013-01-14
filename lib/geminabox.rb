@@ -18,6 +18,7 @@ class Geminabox < Sinatra::Base
   set :incremental_updates, true
   set :views, File.join(File.dirname(__FILE__), *%w[.. views])
   set :allow_replace, false
+  set :logging, true
   use Hostess
 
   class << self
@@ -51,8 +52,8 @@ class Geminabox < Sinatra::Base
   end
 
   # Return a list of versions of gem 'gem_name' with the dependencies of each version.
-  def gem_dependencies(gem_name)
-    dependency_cache.marshal_cache(gem_name) do
+  def gem_dependencies(gem_name, logger)
+    dependency_cache.marshal_cache(gem_name, logger) do
       load_gems.gems.select {|gem| gem_name == gem.name }.map do |gem|
         spec = spec_for(gem.name, gem.number)
         {
@@ -67,7 +68,7 @@ class Geminabox < Sinatra::Base
 
   get '/api/v1/dependencies' do
     query_gems = params[:gems].split(',')
-    deps = query_gems.each_with_object([]) {|query_gem, memo| memo.concat gem_dependencies(query_gem) }
+    deps = query_gems.each_with_object([]) {|query_gem, memo| memo.concat gem_dependencies(query_gem, logger) }
     Marshal.dump(deps)
   end
 
