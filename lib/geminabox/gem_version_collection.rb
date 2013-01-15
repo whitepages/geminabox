@@ -11,17 +11,12 @@ class Geminabox::GemVersionCollection
 
   def initialize(initial_gems=[])
     @gems = []
-    initial_gems.each { |gemdef| self << gemdef }
+    initial_gems.each { |gemdef| insert(gemdef) }
+    @gems.sort!
   end
 
   def <<(version_or_def)
-    version = if version_or_def.is_a?(Geminabox::GemVersion)
-                version_or_def
-              else
-                Geminabox::GemVersion.new(*version_or_def)
-              end
-
-    @gems << version
+    insert(version_or_def)
     @gems.sort!
   end
 
@@ -55,6 +50,16 @@ class Geminabox::GemVersionCollection
   end
 
   private
+  def insert(version_or_def)
+    version = if version_or_def.is_a?(Geminabox::GemVersion)
+                version_or_def
+              else
+                Geminabox::GemVersion.new(*version_or_def)
+              end
+
+    @gems << version
+  end
+
   def hash_of_collections
     Hash.new { |h,k| h[k] = self.class.new }
   end

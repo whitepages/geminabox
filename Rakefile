@@ -39,6 +39,8 @@ task :st => "test:smoke"
 task :test => ["test:units", "test:requests", "test:integration"]
 task :default => :test
 
+# Comment these two lines out to make 'rake test:integration' work:
+# it conflicts with the Gemtools rake task as of gemtools-1.0.2
 require 'gemtools/rake_task'
 Gemtools::RakeTask.install_tasks
 # task :acceptance => [ :test ]
