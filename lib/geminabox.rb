@@ -73,6 +73,11 @@ class Geminabox < Sinatra::Base
     redirect url("/")
   end
 
+  get '/flush' do
+    dependency_cache.flush
+    redirect url("/")
+  end
+
   get '/gems/:gemname' do
     gems = Hash[load_gems.by_name]
     @gem = gems[params[:gemname]]
