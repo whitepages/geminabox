@@ -241,9 +241,16 @@ HTML
   end
 
   helpers do
-    def spec_for(gem_name, version)
-      spec_file = File.join(settings.data, "quick", "Marshal.#{Gem.marshal_version}", "#{gem_name}-#{version}.gemspec.rz")
-      Marshal.load(Gem.inflate(File.read(spec_file))) if File.exists? spec_file
+    def spec_file(gem_name, version, platform)
+      parts = []
+      parts << gem_name << version
+      parts << platform if platform && platform != Gem::Platform::RUBY
+      File.join(settings.data, "quick", "Marshal.#{Gem.marshal_version}", "#{parts.join("-")}.gemspec.rz")
+    end
+
+    def spec_for(gem_name, version, platform)
+      file = spec_file(gem_name, version, platform)
+      Marshal.load(Gem.inflate(File.read(file))) if File.exists? file
     end
 
     # Return a list of versions of gem 'gem_name' with the dependencies of each version.
@@ -251,7 +258,7 @@ HTML
       dependency_cache.marshal_cache(gem_name) do
         load_gems.
           select { |gem| gem_name == gem.name }.
-          map    { |gem| [gem, spec_for(gem.name, gem.number)] }.
+          map    { |gem| [gem, spec_for(gem.name, gem.number, gem.platform)] }.
           reject { |(_, spec)| spec.nil? }.
           map do |(gem, spec)|
             {
