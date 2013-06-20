@@ -75,6 +75,7 @@ class Geminabox < Sinatra::Base
 
   get '/flush' do
     dependency_cache.flush
+    redirect url("/")
   end
 
   get '/gems/:gemname' do
