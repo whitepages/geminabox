@@ -73,7 +73,8 @@ class Geminabox < Sinatra::Base
     redirect url("/")
   end
 
-  get '/flush' do
+  # FIXME this should be a 'DELETE /dependency-cache'
+  get '/flush-dependency-cache' do
     dependency_cache.flush
     redirect url("/")
   end
