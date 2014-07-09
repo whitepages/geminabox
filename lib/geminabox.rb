@@ -14,6 +14,7 @@ class Geminabox < Sinatra::Base
 
   set :public_folder, File.join(File.dirname(__FILE__), *%w[.. public])
   set :data, File.join(File.dirname(__FILE__), *%w[.. data])
+  set :lockfile, File.join('', 'tmp', 'geminabox-update.lock')
   set :build_legacy, false
   set :incremental_updates, true
   set :views, File.join(File.dirname(__FILE__), *%w[.. views])
@@ -90,9 +91,12 @@ class Geminabox < Sinatra::Base
     unless Geminabox.allow_delete?
       error_response(403, 'Gem deletion is disabled - see https://github.com/cwninja/geminabox/issues/115')
     end
-    File.delete file_path if File.exists? file_path
-    reindex(:force_rebuild)
-    redirect url("/")
+
+    serialize_update do
+      File.delete file_path if File.exists? file_path
+      reindex(:force_rebuild)
+      redirect url("/")
+    end
   end
 
   post '/upload' do
@@ -100,12 +104,17 @@ class Geminabox < Sinatra::Base
       @error = "No file selected"
       halt [400, erb(:upload)]
     end
-    handle_incoming_gem(IncomingGem.new(tmpfile))
+
+    serialize_update do
+      handle_incoming_gem(IncomingGem.new(tmpfile))
+    end
   end
 
   post '/api/v1/gems' do
     begin
-      handle_incoming_gem(IncomingGem.new(request.body))
+      serialize_update do
+        handle_incoming_gem(IncomingGem.new(request.body))
+      end
     rescue Object => o
       File.open "/tmp/debug.txt", "a" do |io|
         io.puts o, o.backtrace
@@ -114,6 +123,16 @@ class Geminabox < Sinatra::Base
   end
 
 private
+
+  def serialize_update
+    File.open(settings.lockfile, File::RDWR|File::CREAT) do |f|
+      if f.flock(File::LOCK_EX | File::LOCK_NB)
+        yield
+      else
+        halt [503, 'Repository lock is held by another process']
+      end
+    end
+  end
 
   def handle_incoming_gem(gem)
     prepare_data_folders
