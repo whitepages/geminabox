@@ -10,6 +10,9 @@ require 'rss/atom'
 require 'tempfile'
 
 class Geminabox < Sinatra::Base
+  class Error < StandardError; end
+  class AlreadyLocked < Error; end
+
   enable :static, :methodoverride
 
   set :public_folder, File.join(File.dirname(__FILE__), *%w[.. public])
@@ -124,13 +127,16 @@ class Geminabox < Sinatra::Base
 
 private
 
-  def serialize_update
+  def serialize_update(&block)
+    with_lock(&block)
+  rescue AlreadyLocked
+    halt 503,  { 'Retry-After' => 300 }, 'Repository lock is held by another process'
+  end
+
+  def with_lock
     File.open(settings.lockfile, File::RDWR|File::CREAT) do |f|
-      if f.flock(File::LOCK_EX | File::LOCK_NB)
-        yield
-      else
-        halt [503, 'Repository lock is held by another process']
-      end
+      raise AlreadyLocked unless f.flock(File::LOCK_EX | File::LOCK_NB)
+      yield
     end
   end
 
