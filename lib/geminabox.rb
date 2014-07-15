@@ -75,8 +75,8 @@ class Geminabox < Sinatra::Base
   get '/reindex' do
     serialize_update do
       reindex(:force_rebuild)
+      redirect url("/")
     end
-    redirect url("/")
   end
 
   # FIXME this should be a 'DELETE /dependency-cache'
@@ -100,9 +100,8 @@ class Geminabox < Sinatra::Base
     serialize_update do
       File.delete file_path if File.exists? file_path
       reindex(:force_rebuild)
+      redirect url("/")
     end
-
-    redirect url("/")
   end
 
   post '/upload' do
